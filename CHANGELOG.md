@@ -1,3 +1,8 @@
+<a name="5.6.3"></a>
+## [5.6.3](https://github.com/softwaregroup-bg/ut-port-postgres/compare/v5.6.2...v5.6.3) (2016-09-20)
+
+
+
 <a name="5.6.2"></a>
 ## [5.6.2](https://github.com/softwaregroup-bg/ut-port-postgres/compare/v5.6.1...v5.6.2) (2016-09-19)
 

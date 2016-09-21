@@ -1,3 +1,13 @@
+<a name="5.6.6"></a>
+## [5.6.6](https://github.com/softwaregroup-bg/ut-port-postgres/compare/v5.6.5...v5.6.6) (2016-09-21)
+
+
+### Bug Fixes
+
+* do not wait for end event ([30c0ec7](https://github.com/softwaregroup-bg/ut-port-postgres/commit/30c0ec7))
+
+
+
 <a name="5.6.5"></a>
 ## [5.6.5](https://github.com/softwaregroup-bg/ut-port-postgres/compare/v5.6.4...v5.6.5) (2016-09-21)
 

@@ -683,6 +683,7 @@ PostgreSqlPort.prototype.callSP = function(name, params, flatten, fileName) {
                 }
             })
             .catch(function(err) {
+                request.done();
                 var errorLines = err.message && err.message.split('\n');
                 err.message = errorLines.shift();
                 var error = uterror.get(err.message) || errors.sql;

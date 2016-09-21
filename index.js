@@ -63,7 +63,7 @@ PostgreSqlPort.prototype.connect = function connect() {
                 this.retryTimeout = setTimeout(this.connect.bind(this), this.config.retry || 10000);
                 this.log.error && this.log.error(err);
             } else {
-                throw err;
+                return Promise.reject(err);
             }
         });
 };
@@ -82,15 +82,9 @@ PostgreSqlPort.prototype.stop = function stop() {
     this.retryTimeout && clearTimeout(this.retryTimeout);
     // this.queue.push();
     this.connectionReady = false;
-    // this.connection && this.connection.end();
-    return new Promise((resolve, reject) => {
-        Port.prototype.stop.apply(this, Array.prototype.slice.call(arguments));
-        pgp.pg.on('end', function() {
-            resolve();
-        });
-        pgp.end();
-        this.connection = null;
-    });
+    this.connection = null;
+    pgp.end(); // todo wait for end
+    Port.prototype.stop.apply(this, Array.prototype.slice.call(arguments));
 };
 
 function setPathProperty(object, fieldName, fieldValue) {

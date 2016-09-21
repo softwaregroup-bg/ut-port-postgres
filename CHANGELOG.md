@@ -1,3 +1,13 @@
+<a name="5.6.4"></a>
+## [5.6.4](https://github.com/softwaregroup-bg/ut-port-postgres/compare/v5.6.3...v5.6.4) (2016-09-21)
+
+
+### Bug Fixes
+
+* call request.end() when an error occurs in db funcion so that the connection could be closed ([781f6b6](https://github.com/softwaregroup-bg/ut-port-postgres/commit/781f6b6))
+
+
+
 <a name="5.6.3"></a>
 ## [5.6.3](https://github.com/softwaregroup-bg/ut-port-postgres/compare/v5.6.2...v5.6.3) (2016-09-20)
 

@@ -1,3 +1,13 @@
+<a name="5.7.0"></a>
+# [5.7.0](https://github.com/softwaregroup-bg/ut-port-postgres/compare/v5.6.6...v5.7.0) (2016-09-29)
+
+
+### Features
+
+* always recreate functions on start ([9aae4be](https://github.com/softwaregroup-bg/ut-port-postgres/commit/9aae4be))
+
+
+
 <a name="5.6.6"></a>
 ## [5.6.6](https://github.com/softwaregroup-bg/ut-port-postgres/compare/v5.6.5...v5.6.6) (2016-09-21)
 

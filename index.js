@@ -166,12 +166,19 @@ PostgreSqlPort.prototype.loadSchema = function(objectList) {
                     } else {
                         prev.source[cur.namespace] = '';
                     }
-                    if ((cur.type === 'P') && (self.config.linkSP || (objectList && objectList[cur.full]))) {
-                        prev.parseList.push({
-                            source: cur.source,
-                            params: cur.params, name: '"' + cur.namespace + '"."' + cur.name + '"',
-                            fileName: objectList && objectList[cur.full]
-                        });
+                    if ((cur.type === 'P')) {
+                        if (self.config.linkSP || (objectList && objectList[cur.full])) {
+                            prev.parseList.push({
+                                source: cur.source,
+                                params: cur.params, name: '"' + cur.namespace + '"."' + cur.name + '"',
+                                fileName: objectList && objectList[cur.full]
+                            });
+                        }
+                        var dep = prev.deps[cur.full] || (prev.deps[cur.full] = {names: [], drop: []});
+                        if (dep.names.indexOf(cur.name) < 0) {
+                            dep.names.push(cur.name);
+                            dep.drop.push(cur.drop);
+                        }
                     }
                     return prev;
                 }, schema);

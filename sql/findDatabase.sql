@@ -1,0 +1,1 @@
+SELECT CASE WHEN count(*)>0 THEN true ELSE false END "found" FROM pg_catalog.pg_database WHERE datname = ${database}

@@ -8,7 +8,8 @@ function sql(file) {
 }
 
 module.exports = {
-    loadSchema: sql('load-schema.sql'),
-    createDatabase: sql('create-database.sql'),
-    createUser: sql('create-user.sql')
+    loadSchema: sql('loadSchema.sql'),
+    createDatabase: sql('createDatabase.sql'),
+    findDatabase: sql('findDatabase.sql'),
+    createUser: sql('createUser.sql')
 };

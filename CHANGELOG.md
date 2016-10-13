@@ -1,3 +1,13 @@
+<a name="5.7.2"></a>
+## [5.7.2](https://github.com/softwaregroup-bg/ut-port-postgres/compare/v5.7.1...v5.7.2) (2016-10-13)
+
+
+### Bug Fixes
+
+* return the promise ([5885c75](https://github.com/softwaregroup-bg/ut-port-postgres/commit/5885c75))
+
+
+
 <a name="5.7.1"></a>
 ## [5.7.1](https://github.com/softwaregroup-bg/ut-port-postgres/compare/v5.7.0...v5.7.1) (2016-10-13)
 

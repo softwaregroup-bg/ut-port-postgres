@@ -130,7 +130,7 @@ PostgreSqlPort.prototype.tryConnect = function() {
         .then(() => (req.query(queries.findDatabase, this.config.db)))
         .then((findResult) => {
             if (!findResult.length || !findResult[0].found) {
-                req.query(queries.createDatabase, this.config.db);
+                return req.query(queries.createDatabase, this.config.db);
             }
         })
         .then(() => (req.query(queries.createUser, this.config.db)))

@@ -716,7 +716,7 @@ PostgreSqlPort.prototype.linkSP = function(schema) {
             var binding = {
                 name: procedure.name,
                 type: 'function',
-                params: procedure.params.split(', ').map((param) => {
+                params: procedure.params && procedure.params.split(', ').map((param) => {
                     return {
                         name: param.split(' ')[0].replace(/[@"]/g, ''),
                         def: {

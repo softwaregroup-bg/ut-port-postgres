@@ -46,11 +46,12 @@ PostgreSqlPort.prototype.connect = function connect() {
     this.connectionReady = false;
 
     return Promise.resolve()
-        .then(() => {
+        .then((result) => {
             if (this.config.db.cryptoAlgorithm) {
                 return crypto.decrypt(this.config.db.password, this.config.db.cryptoAlgorithm)
                     .then((password) => (this.config.db.password = password));
             }
+            return result;
         })
         .then(this.tryConnect.bind(this))
         .then(this.loadSchema.bind(this))
@@ -126,23 +127,24 @@ PostgreSqlPort.prototype.tryConnect = function() {
         });
         var req;
         return conCreate.connect()
-        .then((con) => { req = con; })
-        .then(() => (req.query(queries.findDatabase, this.config.db)))
-        .then((findResult) => {
-            if (!findResult.length || !findResult[0].found) {
-                return req.query(queries.createDatabase, this.config.db);
-            }
-        })
-        .then(() => (req.query(queries.createUser, this.config.db)))
-        .then(() => req.done())
-        .then(() => {
-            this.connection = pgp(this.config.db);
-            return this.connection;
-        })
-        .catch((err) => {
-            try { req && req.done(); } catch (e) {};
-            throw err;
-        });
+            .then((con) => { req = con; return con; })
+            .then((con) => (req.query(queries.findDatabase, this.config.db)))
+            .then((findResult) => {
+                if (!findResult.length || !findResult[0].found) {
+                    return req.query(queries.createDatabase, this.config.db);
+                }
+                return findResult;
+            })
+            .then(() => (req.query(queries.createUser, this.config.db)))
+            .then(() => req.done())
+            .then(() => {
+                this.connection = pgp(this.config.db);
+                return this.connection;
+            })
+            .catch((err) => {
+                try { req && req.done(); } catch (e) {};
+                throw err;
+            });
     } else {
         this.connection = pgp(this.config.db);
         return this.connection;
@@ -175,7 +177,8 @@ PostgreSqlPort.prototype.loadSchema = function(objectList) {
                         if (self.config.linkSP || (objectList && objectList[cur.full])) {
                             prev.parseList.push({
                                 source: cur.source,
-                                params: cur.params, name: '"' + cur.namespace + '"."' + cur.name + '"',
+                                params: cur.params,
+                                name: '"' + cur.namespace + '"."' + cur.name + '"',
                                 fileName: objectList && objectList[cur.full]
                             });
                         }
@@ -456,7 +459,7 @@ PostgreSqlPort.prototype.updateSchema = function(schema) {
                                 opcode: 'updateSchema'
                             }
                         });
-                        resolve(prev);
+                        return resolve(prev);
                     })
                     .catch(function(error) {
                         error.fileName = currentFileName;

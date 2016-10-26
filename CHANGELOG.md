@@ -1,3 +1,14 @@
+<a name="5.7.3"></a>
+## [5.7.3](https://github.com/softwaregroup-bg/ut-port-postgres/compare/v5.7.2...v5.7.3) (2016-10-26)
+
+
+### Bug Fixes
+
+* dont't use pg-promise's automatic conversion from array to text([#6](https://github.com/softwaregroup-bg/ut-port-postgres/issues/6)) ([9d2cfa5](https://github.com/softwaregroup-bg/ut-port-postgres/commit/9d2cfa5))
+* make possible to call functions without parameters ([8adac1e](https://github.com/softwaregroup-bg/ut-port-postgres/commit/8adac1e))
+
+
+
 <a name="5.7.2"></a>
 ## [5.7.2](https://github.com/softwaregroup-bg/ut-port-postgres/compare/v5.7.1...v5.7.2) (2016-10-13)
 

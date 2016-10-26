@@ -569,11 +569,23 @@ PostgreSqlPort.prototype.callSP = function(name, params, flatten, fileName) {
             } else {
                 value = data[param.name];
             }
+            if (param.def && param.def.type) {
+                switch (param.def.type) {
+                    case 'time':
+                        value = new Date('1970-01-01T' + value);
+                        break;
+                    case 'json':
+                        value._rawDBType = true;
+                        value.formatDBType = function() {
+                            return pgp.as.json(value);
+                        };
+                        break;
+                    default:
+                        break;
+                }
+            }
             // var hasValue = value !== void 0;
             debug && (debugParams[param.name] = value);
-            if (param.def && param.def.type === 'time') {
-                value = new Date('1970-01-01T' + value);
-            }
             values.push(value);
             // var typeXX = sqlType(param.def);
             // if (param.out) {
@@ -614,100 +626,102 @@ PostgreSqlPort.prototype.callSP = function(name, params, flatten, fileName) {
             //     }
             // }
         });
-        return self.getRequest().then((request) => request.func(name, values)
-            .then(function(resultsets) {
-                request.done();
-                function isNamingResultSet(element) {
-                    return Array.isArray(element) &&
-                        element.length === 1 &&
-                        element[0].hasOwnProperty('resultSetName') &&
-                        typeof element[0].resultSetName === 'string';
-                }
-                if (resultsets.length > 0 && isNamingResultSet(resultsets[0])) {
-                    var namedSet = {};
-                    if (outParams.length) {
-                        namedSet[self.config.paramsOutName] = outParams.reduce(function(prev, curr) {
-                            prev[curr] = request.parameters[curr].value;
-                            return prev;
-                        }, {});
-                    }
-                    var name = null;
-                    var single = false;
-                    for (var i = 0; i < resultsets.length; ++i) {
-                        if (name == null) {
-                            if (!isNamingResultSet(resultsets[i])) {
-                                throw errors.invalidResultSetOrder({
-                                    expectName: true
-                                });
-                            } else {
-                                name = resultsets[i][0].resultSetName;
-                                single = !!resultsets[i][0].single;
+        return self.getRequest()
+            .then(function(request) {
+                return request.func(name, values)
+                    .then(function(resultsets) {
+                        request.done();
+                        function isNamingResultSet(element) {
+                            return Array.isArray(element) &&
+                                element.length === 1 &&
+                                element[0].hasOwnProperty('resultSetName') &&
+                                typeof element[0].resultSetName === 'string';
+                        }
+                        if (resultsets.length > 0 && isNamingResultSet(resultsets[0])) {
+                            var namedSet = {};
+                            if (outParams.length) {
+                                namedSet[self.config.paramsOutName] = outParams.reduce(function(prev, curr) {
+                                    prev[curr] = request.parameters[curr].value;
+                                    return prev;
+                                }, {});
                             }
-                        } else {
-                            if (isNamingResultSet(resultsets[i])) {
+                            var name = null;
+                            var single = false;
+                            for (var i = 0; i < resultsets.length; ++i) {
+                                if (name == null) {
+                                    if (!isNamingResultSet(resultsets[i])) {
+                                        throw errors.invalidResultSetOrder({
+                                            expectName: true
+                                        });
+                                    } else {
+                                        name = resultsets[i][0].resultSetName;
+                                        single = !!resultsets[i][0].single;
+                                    }
+                                } else {
+                                    if (isNamingResultSet(resultsets[i])) {
+                                        throw errors.invalidResultSetOrder({
+                                            expectName: false
+                                        });
+                                    }
+                                    if (namedSet.hasOwnProperty(name)) {
+                                        throw errors.duplicateResultSetName({
+                                            name: name
+                                        });
+                                    }
+                                    if (single) {
+                                        if (resultsets[i].length === 0) {
+                                            namedSet[name] = null;
+                                        } else if (resultsets[i].length === 1) {
+                                            namedSet[name] = resultsets[i][0];
+                                        } else {
+                                            throw errors.singleResultExpected({
+                                                count: resultsets[i].length
+                                            });
+                                        }
+                                    } else {
+                                        namedSet[name] = resultsets[i];
+                                    }
+                                    name = null;
+                                    single = false;
+                                }
+                            }
+                            if (name != null) {
                                 throw errors.invalidResultSetOrder({
                                     expectName: false
                                 });
                             }
-                            if (namedSet.hasOwnProperty(name)) {
-                                throw errors.duplicateResultSetName({
-                                    name: name
-                                });
-                            }
-                            if (single) {
-                                if (resultsets[i].length === 0) {
-                                    namedSet[name] = null;
-                                } else if (resultsets[i].length === 1) {
-                                    namedSet[name] = resultsets[i][0];
-                                } else {
-                                    throw errors.singleResultExpected({
-                                        count: resultsets[i].length
-                                    });
-                                }
-                            } else {
-                                namedSet[name] = resultsets[i];
-                            }
-                            name = null;
-                            single = false;
+                            return namedSet;
                         }
-                    }
-                    if (name != null) {
-                        throw errors.invalidResultSetOrder({
-                            expectName: false
-                        });
-                    }
-                    return namedSet;
-                }
-                if (outParams.length) {
-                    resultsets.push([outParams.reduce(function(prev, curr) {
-                        prev[curr] = request.parameters[curr].value;
-                        return prev;
-                    }, {})]);
-                }
-                if (resultsets && resultsets.length === 1 && resultsets[0].isSingleResult) {
-                    delete resultsets[0].isSingleResult;
-                    return resultsets[0];
-                } else {
-                    return resultsets;
-                }
-            })
-            .catch(function(err) {
-                request.done();
-                var errorLines = err.message && err.message.split('\n');
-                err.message = errorLines.shift();
-                var error = uterror.get(err.message) || errors.sql;
-                var errToThrow = error(err);
-                if (debug) {
-                    err.storedProcedure = name;
-                    err.params = debugParams;
-                    err.fileName = fileName + ':1:1';
-                    var stack = errToThrow.stack.split('\n');
-                    stack.splice.apply(stack, [1, 0].concat(errorLines));
-                    errToThrow.stack = stack.join('\n');
-                }
-                throw errToThrow;
-            })
-        );
+                        if (outParams.length) {
+                            resultsets.push([outParams.reduce(function(prev, curr) {
+                                prev[curr] = request.parameters[curr].value;
+                                return prev;
+                            }, {})]);
+                        }
+                        if (resultsets && resultsets.length === 1 && resultsets[0].isSingleResult) {
+                            delete resultsets[0].isSingleResult;
+                            return resultsets[0];
+                        } else {
+                            return resultsets;
+                        }
+                    })
+                    .catch(function(err) {
+                        request.done();
+                        var errorLines = err.message && err.message.split('\n');
+                        err.message = errorLines.shift();
+                        var error = uterror.get(err.message) || errors.sql;
+                        var errToThrow = error(err);
+                        if (debug) {
+                            err.storedProcedure = name;
+                            err.params = debugParams;
+                            err.fileName = fileName + ':1:1';
+                            var stack = errToThrow.stack.split('\n');
+                            stack.splice.apply(stack, [1, 0].concat(errorLines));
+                            errToThrow.stack = stack.join('\n');
+                        }
+                        throw errToThrow;
+                    });
+            });
     };
 };
 

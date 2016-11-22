@@ -1,3 +1,15 @@
+<a name="5.7.4"></a>
+## [5.7.4](https://github.com/softwaregroup-bg/ut-port-postgres/compare/v5.7.3...v5.7.4) (2016-11-22)
+
+
+### Bug Fixes
+
+* delete _rawDBType ([cc6f21e](https://github.com/softwaregroup-bg/ut-port-postgres/commit/cc6f21e))
+* linting ([022398c](https://github.com/softwaregroup-bg/ut-port-postgres/commit/022398c))
+* update dependencies ([a7ae95e](https://github.com/softwaregroup-bg/ut-port-postgres/commit/a7ae95e))
+
+
+
 <a name="5.7.3"></a>
 ## [5.7.3](https://github.com/softwaregroup-bg/ut-port-postgres/compare/v5.7.2...v5.7.3) (2016-10-26)
 

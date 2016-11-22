@@ -577,6 +577,7 @@ PostgreSqlPort.prototype.callSP = function(name, params, flatten, fileName) {
                     case 'json':
                         value._rawDBType = true;
                         value.formatDBType = function() {
+                            delete value._rawDBType;
                             return pgp.as.json(value);
                         };
                         break;

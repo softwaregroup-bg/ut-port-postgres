@@ -823,45 +823,42 @@ PostgreSqlPort.prototype.exec = function(message) {
 
     // var start = +new Date();
     var debug = this.isDebug();
-    return this.getRequest().then((request) =>
-        when.promise(function(resolve, reject) {
-            request.query(message.query, function(err, result) {
-                // var end = +new Date();
-                // var execTime = end - start;
-                // todo record execution time
+    return this.getRequest().then((request) => {
+        return request.query(message.query)
+            .then(result => {
                 request.done();
-                if (err) {
-                    debug && (err.query = message.query);
-                    var error = uterror.get(err.message && err.message.split('\n').shift()) || errors.sql;
-                    reject(error(err));
-                } else {
-                    $meta.mtid = 'response';
-                    if (message.process === 'return') {
-                        if (result && result.length) {
-                            Object.keys(result[0]).forEach(function(value) {
-                                setPathProperty(message, value, result[0][value]);
-                            });
-                        }
-                        resolve(message);
-                    } else if (message.process === 'json') {
-                        message.dataSet = result;
-                        resolve(message);
-                    } else if (message.process === 'xls') { // todo
-                        reject(errors.notImplemented(message.process));
-                    } else if (message.process === 'xml') { // todo
-                        reject(errors.notImplemented(message.process));
-                    } else if (message.process === 'csv') { // todo
-                        reject(errors.notImplemented(message.process));
-                    } else if (message.process === 'processRows') { // todo
-                        reject(errors.notImplemented(message.process));
-                    } else if (message.process === 'queueRows') { // todo
-                        reject(errors.notImplemented(message.process));
-                    } else {
-                        reject(errors.missingProcess(message.process));
+                $meta.mtid = 'response';
+                if (message.process === 'return') {
+                    if (result && result.length) {
+                        Object.keys(result[0]).forEach(function(value) {
+                            setPathProperty(message, value, result[0][value]);
+                        });
                     }
+                    return message;
+                } else if (message.process === 'json') {
+                    message.dataSet = result;
+                    return message;
+                } else if (message.process === 'xls') { // todo
+                    throw errors.notImplemented(message.process);
+                } else if (message.process === 'xml') { // todo
+                    throw errors.notImplemented(message.process);
+                } else if (message.process === 'csv') { // todo
+                    throw errors.notImplemented(message.process);
+                } else if (message.process === 'processRows') { // todo
+                    throw errors.notImplemented(message.process);
+                } else if (message.process === 'queueRows') { // todo
+                    throw errors.notImplemented(message.process);
+                } else {
+                    throw errors.missingProcess(message.process);
                 }
+            })
+            .catch(err => {
+                request.done();
+                debug && (err.query = message.query);
+                var error = uterror.get(err.message && err.message.split('\n').shift()) || errors.sql;
+                throw error(err);
             });
-        }));
+    });
 };
 
 module.exports = PostgreSqlPort;

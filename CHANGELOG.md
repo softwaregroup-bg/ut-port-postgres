@@ -1,3 +1,13 @@
+<a name="5.7.5"></a>
+## [5.7.5](https://github.com/softwaregroup-bg/ut-port-postgres/compare/v5.7.4...v5.7.5) (2016-12-14)
+
+
+### Bug Fixes
+
+* fix exec method ([827d93a](https://github.com/softwaregroup-bg/ut-port-postgres/commit/827d93a))
+
+
+
 <a name="5.7.4"></a>
 ## [5.7.4](https://github.com/softwaregroup-bg/ut-port-postgres/compare/v5.7.3...v5.7.4) (2016-11-22)
 

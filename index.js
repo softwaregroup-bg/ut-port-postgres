@@ -9,7 +9,7 @@ var uterror = require('ut-error');
 var queries = require('./sql');
 
 const AUDIT_LOG = /^[\s+]{0,}--ut-audit-params$/m;
-const CORE_ERROR = /^[\s+]{0,}EXEC \[?core\]?\.\[?error\]?$/m;
+const CORE_ERROR = /^[\s+]{0,}EXEC \[?core]?\.\[?error]?$/m;
 const CALL_PARAMS = /^[\s+]{0,}DECLARE @callParams XML$/m;
 
 function PostgreSqlPort() {
@@ -293,7 +293,7 @@ PostgreSqlPort.prototype.updateSchema = function(schema) {
             var parserSP = require('./parsers/postgres');
             var binding = parserSP.parse(statement);
             if (binding.type === 'table') {
-                var name = binding.name.match(/\]$/) ? binding.name.slice(0, -1) + 'TT]' : binding.name + 'TT';
+                var name = binding.name.match(/]$/) ? binding.name.slice(0, -1) + 'TT]' : binding.name + 'TT';
                 var columns = binding.fields.map(function(field) {
                     return `[${field.column}] [${field.type}]` +
                         (field.length !== null && field.scale !== null ? `(${field.length},${field.scale})` : '') +
@@ -313,7 +313,7 @@ PostgreSqlPort.prototype.updateSchema = function(schema) {
             var parserSP = require('./parsers/postgres');
             var binding = parserSP.parse(statement);
             if (binding.type === 'table') {
-                var name = binding.name.match(/\]$/) ? binding.name.slice(0, -1) + 'TTU]' : binding.name + 'TTU';
+                var name = binding.name.match(/]$/) ? binding.name.slice(0, -1) + 'TTU]' : binding.name + 'TTU';
                 var columns = binding.fields.map(function(field) {
                     return ('[' + field.column + '] [' + field.type + ']' +
                         (field.length !== null && field.scale !== null ? `(${field.length},${field.scale})` : '') +
@@ -376,7 +376,7 @@ PostgreSqlPort.prototype.updateSchema = function(schema) {
     }
 
     function getObjectName(fileName) {
-        return fileName.replace(/\.sql$/i, '').replace(/^[^\$]*\$/, ''); // remove "prefix$" and ".sql" suffix
+        return fileName.replace(/\.sql$/i, '').replace(/^[^$]*\$/, ''); // remove "prefix$" and ".sql" suffix
     }
 
     function shouldCreateTT(tableName) {

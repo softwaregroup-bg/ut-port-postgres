@@ -1,3 +1,14 @@
+<a name="5.7.6"></a>
+## [5.7.6](https://github.com/softwaregroup-bg/ut-port-postgres/compare/v5.7.5...v5.7.6) (2017-01-17)
+
+
+### Bug Fixes
+
+* fix lint errors ([7bd31d6](https://github.com/softwaregroup-bg/ut-port-postgres/commit/7bd31d6))
+* update dependencies ([19c3dde](https://github.com/softwaregroup-bg/ut-port-postgres/commit/19c3dde))
+
+
+
 <a name="5.7.5"></a>
 ## [5.7.5](https://github.com/softwaregroup-bg/ut-port-postgres/compare/v5.7.4...v5.7.5) (2016-12-14)
 

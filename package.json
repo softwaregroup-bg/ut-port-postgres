@@ -1,6 +1,6 @@
 {
   "name": "ut-port-postgres",
-  "version": "5.7.6",
+  "version": "5.7.7",
   "main": "./index.js",
   "dependencies": {
     "pg-promise": "5.3.1",

@@ -1,3 +1,8 @@
+<a name="5.7.9"></a>
+## [5.7.9](https://github.com/softwaregroup-bg/ut-port-postgres/compare/v5.7.8...v5.7.9) (2017-05-22)
+
+
+
 <a name="5.7.8"></a>
 ## [5.7.8](https://github.com/softwaregroup-bg/ut-port-postgres/compare/v5.7.7...v5.7.8) (2017-04-24)
 

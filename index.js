@@ -452,27 +452,27 @@ PostgreSqlPort.prototype.updateSchema = function(schema) {
                             })
                         );
                     }, [])
-                    .then(function() {
-                        updated.length && self.log.info && self.log.info({
-                            message: updated,
-                            $meta: {
-                                opcode: 'updateSchema'
-                            }
+                        .then(function() {
+                            updated.length && self.log.info && self.log.info({
+                                message: updated,
+                                $meta: {
+                                    opcode: 'updateSchema'
+                                }
+                            });
+                            return resolve(prev);
+                        })
+                        .catch(function(error) {
+                            error.fileName = currentFileName;
+                            error.message = error.message + ' (' + currentFileName + ':' + (error.lineNumber || 1) + ':1)';
+                            reject(error);
                         });
-                        return resolve(prev);
-                    })
-                    .catch(function(error) {
-                        error.fileName = currentFileName;
-                        error.message = error.message + ' (' + currentFileName + ':' + (error.lineNumber || 1) + ':1)';
-                        reject(error);
-                    });
                 }
             });
         }, []);
     }, [])
-    .then(function(objectList) {
-        return self.loadSchema(objectList);
-    });
+        .then(function(objectList) {
+            return self.loadSchema(objectList);
+        });
 };
 
 PostgreSqlPort.prototype.getRequest = function() {

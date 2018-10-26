@@ -1,14 +1,15 @@
 var crypto = require('crypto');
-var defPassword = 'some password';
+const defPassword = '12345678901234567890123456789012';
+const defIV = '1234567890123456';
 
 module.exports = {
-    encrypt: (text, algorithm, password) => {
-        var cipher = crypto.createCipher(algorithm, password || defPassword);
+    encrypt: (text, algorithm, password, iv) => {
+        let cipher = crypto.createCipheriv(algorithm, password || defPassword, iv || defIV);
 
         return new Promise((resolve, reject) => {
-            var encrypted = '';
+            let encrypted = '';
             cipher.on('readable', () => {
-                var data = cipher.read();
+                let data = cipher.read();
                 if (data) {
                     encrypted += data.toString('hex');
                 }
@@ -21,13 +22,13 @@ module.exports = {
             cipher.end();
         });
     },
-    decrypt: (text, algorithm, password) => {
-        var decipher = crypto.createDecipher(algorithm, password || defPassword);
+    decrypt: (text, algorithm, password, iv) => {
+        let decipher = crypto.createDecipheriv(algorithm, password || defPassword, iv || defIV);
 
         return new Promise((resolve, reject) => {
-            var decrypted = '';
+            let decrypted = '';
             decipher.on('readable', () => {
-                var data = decipher.read();
+                let data = decipher.read();
                 if (data) {
                     decrypted += data.toString('utf8');
                 }

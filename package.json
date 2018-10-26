@@ -4,14 +4,14 @@
   "main": "./index.js",
   "dependencies": {
     "pg-promise": "5.3.1",
-    "ut-error": "^5.4.0",
-    "when": "3.7.7"
+    "ut-error": "^5.4.9",
+    "when": "3.7.8"
   },
   "devDependencies": {
     "ut-tools": "^5.13.5"
   },
   "peerDependencies": {
-    "ut-bus": "^5.9.0"
+    "ut-bus": "^6.7.0"
   },
   "scripts": {
     "lint": "ut-lint .",
@@ -23,6 +23,7 @@
     "postpublish": "ut-postpublish",
     "postversion": "ut-postversion",
     "precommit": "ut-precommit",
+    "precover": "ut-precover",
     "prepublish": "ut-prepublish",
     "prepush": "ut-prepush",
     "pretest": "ut-pretest",

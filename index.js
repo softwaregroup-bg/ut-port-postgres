@@ -23,7 +23,6 @@ function PostgreSqlPort() {
         paramsOutName: 'out',
         doc: false
     };
-    this.super = {};
     this.connection = null;
     this.retryTimeout = null;
 }
@@ -46,9 +45,9 @@ PostgreSqlPort.prototype.connect = function connect() {
 
     return Promise.resolve()
         .then((result) => {
-            if (this.config.db.cryptoAlgorithm) {
-                return crypto.decrypt(this.config.db.password, this.config.db.cryptoAlgorithm)
-                    .then((password) => (this.config.db.password = password));
+            if (this.config.connection.cryptoAlgorithm) {
+                return crypto.decrypt(this.config.connection.password, this.config.connection.cryptoAlgorithm)
+                    .then((password) => (this.config.connection.password = password));
             }
             return result;
         })
@@ -69,7 +68,7 @@ PostgreSqlPort.prototype.connect = function connect() {
 };
 
 PostgreSqlPort.prototype.start = function start() {
-    this.bus && this.bus.importMethods(this.config, this.config.imports, undefined, this);
+    this.bus && this.bus.attachHandlers(this.methods, this.config.imports, this);
     return Port.prototype.start.apply(this, Array.prototype.slice.call(arguments))
         .then(this.connect.bind(this))
         .then((result) => {
@@ -104,14 +103,14 @@ function setPathProperty(object, fieldName, fieldValue) {
 PostgreSqlPort.prototype.checkConnection = function(checkReady) {
     if (!this.connection) {
         throw errors.noConnection({
-            server: this.config.db && this.config.db.host,
-            database: this.config.db && this.config.db.database
+            server: this.config.connection && this.config.connection.host,
+            database: this.config.connection && this.config.connection.database
         });
     }
     if (checkReady && !this.connectionReady) {
         throw errors.notReady({
-            server: this.config.db && this.config.db.host,
-            database: this.config.db && this.config.db.database
+            server: this.config.connection && this.config.connection.host,
+            database: this.config.connection && this.config.connection.database
         });
     }
 };
@@ -119,7 +118,7 @@ PostgreSqlPort.prototype.checkConnection = function(checkReady) {
 PostgreSqlPort.prototype.tryConnect = function() {
     if (this.config.create) {
         var conCreate = pgp({
-            host: this.config.db.host,
+            host: this.config.connection.host,
             database: 'postgres',
             user: this.config.create.user,
             password: this.config.create.password
@@ -127,17 +126,17 @@ PostgreSqlPort.prototype.tryConnect = function() {
         var req;
         return conCreate.connect()
             .then((con) => { req = con; return con; })
-            .then((con) => (req.query(queries.findDatabase, this.config.db)))
+            .then((con) => (req.query(queries.findDatabase, this.config.connection)))
             .then((findResult) => {
                 if (!findResult.length || !findResult[0].found) {
-                    return req.query(queries.createDatabase, this.config.db);
+                    return req.query(queries.createDatabase, this.config.connection);
                 }
                 return findResult;
             })
-            .then(() => (req.query(queries.createUser, this.config.db)))
+            .then(() => (req.query(queries.createUser, this.config.connection)))
             .then(() => req.done())
             .then(() => {
-                this.connection = pgp(this.config.db);
+                this.connection = pgp(this.config.connection);
                 return this.connection;
             })
             .catch((err) => {
@@ -145,7 +144,7 @@ PostgreSqlPort.prototype.tryConnect = function() {
                 throw err;
             });
     } else {
-        this.connection = pgp(this.config.db);
+        this.connection = pgp(this.config.connection);
         return this.connection;
     }
 };
@@ -231,9 +230,10 @@ PostgreSqlPort.prototype.getSchema = function() {
             result.push({path: this.config.schema});
         }
     }
-    this.config.imports && this.config.imports.forEach(function(imp) {
-        imp.match(/\.schema$/) && Array.prototype.push.apply(result, this.config[imp]);
-        this.config[imp + '.schema'] && Array.prototype.push.apply(result, this.config[imp + '.schema']);
+    this.methods.imported && Object.entries(this.methods.imported).forEach(function([name, value]) {
+        if (this.includesConfig('updates', name, true)) {
+            value.schema && Array.prototype.push.apply(result, value.schema);
+        }
     }.bind(this));
     return result;
 };
@@ -390,94 +390,97 @@ PostgreSqlPort.prototype.updateSchema = function(schema) {
     if (!schemas) {
         return schema;
     }
+    return schemas.reduce((promise, schemaConfig) => {
+    	return promise
+    		.then(() => {
+    			return new Promise(function(resolve, reject) {
+		            fs.readdir(schemaConfig.path, function(err, files) {
+		                if (err) {
+		                    reject(err);
+		                } else {
+		                    var queries = [];
+		                    files = files.sort();
+		                    var objectIds = files.reduce(function(prev, cur) {
+		                        prev[getObjectName(cur).toLowerCase()] = true;
+		                        return prev;
+		                    }, {});
+		                    files.forEach(function(file) {
+		                        var objectName = getObjectName(file);
+		                        var objectId = objectName.toLowerCase();
+		                        var fileName = schemaConfig.path + '/' + file;
+		                        schemaConfig.linkSP && (prev[objectId] = fileName);
+		                        var fileContent = fs.readFileSync(fileName).toString();
+		                        addQuery(queries, {
+		                            fileName: fileName,
+		                            objectName: objectName,
+		                            objectId: objectId,
+		                            fileContent: fileContent,
+		                            createStatement: getCreateStatement(fileContent, fileName, objectName)
+		                        });
+		                        if (shouldCreateTT(objectId) && !objectIds[objectId + 'tt']) {
+		                            var tt = tableToType(fileContent.trim().replace(/^ALTER /i, 'CREATE '));
+		                            if (tt) {
+		                                addQuery(queries, {
+		                                    fileName: fileName,
+		                                    objectName: objectName + 'TT',
+		                                    objectId: objectId + 'tt',
+		                                    fileContent: tt,
+		                                    createStatement: tt
+		                                });
+		                            }
+		                            var ttu = tableToTTU(fileContent.trim().replace(/^ALTER /i, 'CREATE '));
+		                            if (ttu) {
+		                                addQuery(queries, {
+		                                    fileName: fileName,
+		                                    objectName: objectName + 'TTU',
+		                                    objectId: objectId + 'ttu',
+		                                    fileContent: ttu,
+		                                    createStatement: ttu
+		                                });
+		                            }
+		                        }
+		                    });
 
-    return when.reduce(schemas, function(prev, schemaConfig) { // visit each schema folder
-        return new Promise(function(resolve, reject) {
-            fs.readdir(schemaConfig.path, function(err, files) {
-                if (err) {
-                    reject(err);
-                } else {
-                    var queries = [];
-                    files = files.sort();
-                    var objectIds = files.reduce(function(prev, cur) {
-                        prev[getObjectName(cur).toLowerCase()] = true;
-                        return prev;
-                    }, {});
-                    files.forEach(function(file) {
-                        var objectName = getObjectName(file);
-                        var objectId = objectName.toLowerCase();
-                        var fileName = schemaConfig.path + '/' + file;
-                        schemaConfig.linkSP && (prev[objectId] = fileName);
-                        var fileContent = fs.readFileSync(fileName).toString();
-                        addQuery(queries, {
-                            fileName: fileName,
-                            objectName: objectName,
-                            objectId: objectId,
-                            fileContent: fileContent,
-                            createStatement: getCreateStatement(fileContent, fileName, objectName)
-                        });
-                        if (shouldCreateTT(objectId) && !objectIds[objectId + 'tt']) {
-                            var tt = tableToType(fileContent.trim().replace(/^ALTER /i, 'CREATE '));
-                            if (tt) {
-                                addQuery(queries, {
-                                    fileName: fileName,
-                                    objectName: objectName + 'TT',
-                                    objectId: objectId + 'tt',
-                                    fileContent: tt,
-                                    createStatement: tt
-                                });
-                            }
-                            var ttu = tableToTTU(fileContent.trim().replace(/^ALTER /i, 'CREATE '));
-                            if (ttu) {
-                                addQuery(queries, {
-                                    fileName: fileName,
-                                    objectName: objectName + 'TTU',
-                                    objectId: objectId + 'ttu',
-                                    fileContent: ttu,
-                                    createStatement: ttu
-                                });
-                            }
-                        }
-                    });
-
-                    var currentFileName = '';
-                    var updated = [];
-                    queries.reduce((promise, query) => {
-                        return promise
-                            .then(() => {
-                                updated.push(query.objectName);
-                                currentFileName = query.fileName;
-                                return self.getRequest()
-                                    .then(request => {
-                                        return request.query(query.content)
-                                            .then((res) => {
-                                                request.done();
-                                                return res;
-                                            });
-                                    });
-                            });
-                    }, Promise.resolve())
-                        .then(function() {
-                            updated.length && self.log.info && self.log.info({
-                                message: updated,
-                                $meta: {
-                                    opcode: 'updateSchema'
-                                }
-                            });
-                            return resolve(prev);
-                        })
-                        .catch(function(error) {
-                            error.fileName = currentFileName;
-                            error.message = error.message + ' (' + currentFileName + ':' + (error.lineNumber || 1) + ':1)';
-                            reject(error);
-                        });
-                }
-            });
-        }, []);
-    }, [])
-    .then(function(objectList) {
+		                    var currentFileName = '';
+		                    var updated = [];
+		                    queries.reduce((promise, query) => {
+		                        return promise
+		                            .then(() => {
+		                                updated.push(query.objectName);
+		                                currentFileName = query.fileName;
+		                                return self.getRequest()
+		                                    .then(request => {
+		                                        return request.query(query.content)
+		                                            .then(res => {
+		                                                request.done();
+		                                                return res;
+		                                            });
+		                                    });
+		                            });
+		                    }, Promise.resolve())
+		                        .then(function() {
+		                            updated.length && self.log.info && self.log.info({
+		                                message: updated,
+		                                $meta: {
+		                                    opcode: 'updateSchema'
+		                                }
+		                            });
+		                            return resolve(prev);
+		                        })
+		                        .catch(function(error) {
+		                            error.fileName = currentFileName;
+		                            error.message = error.message + ' (' + currentFileName + ':' + (error.lineNumber || 1) + ':1)';
+		                            reject(error);
+		                        });
+		                }
+		            });
+		        }, [])
+    		})
+    }, Promise.resolve())
+	.then(function(objectList) {
         return self.loadSchema(objectList);
     });
+        
 };
 
 PostgreSqlPort.prototype.getRequest = function() {
@@ -796,10 +799,7 @@ PostgreSqlPort.prototype.linkSP = function(schema) {
                         // };
                     }
                 });
-                this.super[flatName] = this.callSP(binding.name, binding.params, flatten, procedure.fileName).bind(this);
-                if (!this.config[flatName]) {
-                    this.config[flatName] = this.super[flatName];
-                }
+                this.methods[flatName] = this.callSP(binding.name, binding.params, flatten, procedure.fileName).bind(this);
             }
         }.bind(this));
     }
@@ -810,11 +810,7 @@ PostgreSqlPort.prototype.exec = function(message) {
     var $meta = (arguments.length && arguments[arguments.length - 1]);
     var methodName = ($meta && $meta.method);
     if (methodName) {
-        var method = this.config[methodName];
-        if (!method) {
-            methodName = methodName.split('/', 2);
-            method = methodName.length === 2 && this.config[methodName[1]];
-        }
+        var method = this.findHandler(methodName);
         if (method instanceof Function) {
             return Promise.resolve()
                 .then(() => method.apply(this, Array.prototype.slice.call(arguments)));

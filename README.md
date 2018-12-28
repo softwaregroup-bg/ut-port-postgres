@@ -2,8 +2,10 @@
 
 ## Returning multiple result sets
 
-If there is need to return data from several unrelated queries, the following pattern can be used.
-If we have the queries q1 and q2 (each one is any valid select statement represented with SELECT 1 and SELECT 2 below), then the following can be executed:
+If there is need to return data from several unrelated queries, the following
+pattern can be used. If we have the queries q1 and q2 (each one is any valid
+select statement represented with SELECT 1 and SELECT 2 below), then the
+following can be executed:
 
 ```sql
 WITH
@@ -29,4 +31,5 @@ The result returned by the port will be JSON with the following structure:
 }
 ```
 
-This basically returns two result sets as properties in one object. Each result set is array of objects, where each object represents one row from the query.
+This basically returns two result sets as properties in one object. Each result
+set is array of objects, where each object represents one row from the query.

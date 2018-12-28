@@ -3,7 +3,6 @@ var Port = require('ut-bus/port');
 var errors = require('./errors');
 var util = require('util');
 var fs = require('fs');
-var when = require('when');
 var crypto = require('./crypto');
 var uterror = require('ut-error');
 var queries = require('./sql');
@@ -393,7 +392,7 @@ PostgreSqlPort.prototype.updateSchema = function(schema) {
     }
 
     return when.reduce(schemas, function(prev, schemaConfig) { // visit each schema folder
-        return when.promise(function(resolve, reject) {
+        return new Promise(function(resolve, reject) {
             fs.readdir(schemaConfig.path, function(err, files) {
                 if (err) {
                     reject(err);
@@ -443,29 +442,35 @@ PostgreSqlPort.prototype.updateSchema = function(schema) {
 
                     var currentFileName = '';
                     var updated = [];
-                    when.reduce(queries, function(result, query) {
-                        updated.push(query.objectName);
-                        currentFileName = query.fileName;
-                        return self.getRequest().then(
-                            (request) => request.query(query.content).then((res) => {
-                                request.done(); return res;
-                            })
-                        );
-                    }, [])
-                    .then(function() {
-                        updated.length && self.log.info && self.log.info({
-                            message: updated,
-                            $meta: {
-                                opcode: 'updateSchema'
-                            }
+                    queries.reduce((promise, query) => {
+                        return promise
+                            .then(() => {
+                                updated.push(query.objectName);
+                                currentFileName = query.fileName;
+                                return self.getRequest()
+                                    .then(request => {
+                                        return request.query(query.content)
+                                            .then((res) => {
+                                                request.done();
+                                                return res;
+                                            });
+                                    });
+                            });
+                    }, Promise.resolve())
+                        .then(function() {
+                            updated.length && self.log.info && self.log.info({
+                                message: updated,
+                                $meta: {
+                                    opcode: 'updateSchema'
+                                }
+                            });
+                            return resolve(prev);
+                        })
+                        .catch(function(error) {
+                            error.fileName = currentFileName;
+                            error.message = error.message + ' (' + currentFileName + ':' + (error.lineNumber || 1) + ':1)';
+                            reject(error);
                         });
-                        return resolve(prev);
-                    })
-                    .catch(function(error) {
-                        error.fileName = currentFileName;
-                        error.message = error.message + ' (' + currentFileName + ':' + (error.lineNumber || 1) + ':1)';
-                        reject(error);
-                    });
                 }
             });
         }, []);
@@ -811,7 +816,8 @@ PostgreSqlPort.prototype.exec = function(message) {
             method = methodName.length === 2 && this.config[methodName[1]];
         }
         if (method instanceof Function) {
-            return when.lift(method).apply(this, Array.prototype.slice.call(arguments));
+            return Promise.resolve()
+                .then(() => method.apply(this, Array.prototype.slice.call(arguments)));
         }
     }
 

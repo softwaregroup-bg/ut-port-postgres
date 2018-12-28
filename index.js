@@ -149,7 +149,7 @@ PostgreSqlPort.prototype.tryConnect = function() {
     }
 };
 
-PostgreSqlPort.prototype.loadSchema = function(objectList) {
+PostgreSqlPort.prototype.loadSchema = function(objectMap = {}) {
     var self = this;
     var schema = this.getSchema();
     if ((Array.isArray(schema) && !schema.length) || !schema) {
@@ -172,12 +172,12 @@ PostgreSqlPort.prototype.loadSchema = function(objectList) {
                         prev.source[cur.namespace] = '';
                     }
                     if ((cur.type === 'P')) {
-                        if (self.config.linkSP || (objectList && objectList[cur.full])) {
+                        if (self.config.linkSP || objectMap[cur.full]) {
                             prev.parseList.push({
                                 source: cur.source,
                                 params: cur.params,
                                 name: '"' + cur.namespace + '"."' + cur.name + '"',
-                                fileName: objectList && objectList[cur.full]
+                                fileName: objectMap[cur.full]
                             });
                         }
                         var dep = prev.deps[cur.full] || (prev.deps[cur.full] = {names: [], drop: []});
@@ -476,9 +476,9 @@ PostgreSqlPort.prototype.updateSchema = function(schema) {
                     });
                 }, []);
             });
-    }, Promise.resolve([]))
-    .then(function(objectList) {
-        return self.loadSchema(objectList);
+    }, Promise.resolve({}))
+    .then(function(objectMap) {
+        return self.loadSchema(objectMap);
     });
 };
 

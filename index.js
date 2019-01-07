@@ -3,7 +3,6 @@ var Port = require('ut-bus/port');
 var errors = require('./errors');
 var util = require('util');
 var fs = require('fs');
-var when = require('when');
 var crypto = require('./crypto');
 var uterror = require('ut-error');
 var queries = require('./sql');
@@ -150,7 +149,7 @@ PostgreSqlPort.prototype.tryConnect = function() {
     }
 };
 
-PostgreSqlPort.prototype.loadSchema = function(objectList) {
+PostgreSqlPort.prototype.loadSchema = function(objectMap = {}) {
     var self = this;
     var schema = this.getSchema();
     if ((Array.isArray(schema) && !schema.length) || !schema) {
@@ -173,12 +172,12 @@ PostgreSqlPort.prototype.loadSchema = function(objectList) {
                         prev.source[cur.namespace] = '';
                     }
                     if ((cur.type === 'P')) {
-                        if (self.config.linkSP || (objectList && objectList[cur.full])) {
+                        if (self.config.linkSP || objectMap[cur.full]) {
                             prev.parseList.push({
                                 source: cur.source,
                                 params: cur.params,
                                 name: '"' + cur.namespace + '"."' + cur.name + '"',
-                                fileName: objectList && objectList[cur.full]
+                                fileName: objectMap[cur.full]
                             });
                         }
                         var dep = prev.deps[cur.full] || (prev.deps[cur.full] = {names: [], drop: []});
@@ -391,88 +390,96 @@ PostgreSqlPort.prototype.updateSchema = function(schema) {
     if (!schemas) {
         return schema;
     }
-
-    return when.reduce(schemas, function(prev, schemaConfig) { // visit each schema folder
-        return when.promise(function(resolve, reject) {
-            fs.readdir(schemaConfig.path, function(err, files) {
-                if (err) {
-                    reject(err);
-                } else {
-                    var queries = [];
-                    files = files.sort();
-                    var objectIds = files.reduce(function(prev, cur) {
-                        prev[getObjectName(cur).toLowerCase()] = true;
-                        return prev;
-                    }, {});
-                    files.forEach(function(file) {
-                        var objectName = getObjectName(file);
-                        var objectId = objectName.toLowerCase();
-                        var fileName = schemaConfig.path + '/' + file;
-                        schemaConfig.linkSP && (prev[objectId] = fileName);
-                        var fileContent = fs.readFileSync(fileName).toString();
-                        addQuery(queries, {
-                            fileName: fileName,
-                            objectName: objectName,
-                            objectId: objectId,
-                            fileContent: fileContent,
-                            createStatement: getCreateStatement(fileContent, fileName, objectName)
-                        });
-                        if (shouldCreateTT(objectId) && !objectIds[objectId + 'tt']) {
-                            var tt = tableToType(fileContent.trim().replace(/^ALTER /i, 'CREATE '));
-                            if (tt) {
+    return schemas.reduce((promise, schemaConfig) => {
+        return promise
+            .then(prev => {
+                return new Promise(function(resolve, reject) {
+                    fs.readdir(schemaConfig.path, function(err, files) {
+                        if (err) {
+                            reject(err);
+                        } else {
+                            var queries = [];
+                            files = files.sort();
+                            var objectIds = files.reduce(function(prev, cur) {
+                                prev[getObjectName(cur).toLowerCase()] = true;
+                                return prev;
+                            }, {});
+                            files.forEach(function(file) {
+                                var objectName = getObjectName(file);
+                                var objectId = objectName.toLowerCase();
+                                var fileName = schemaConfig.path + '/' + file;
+                                schemaConfig.linkSP && (prev[objectId] = fileName);
+                                var fileContent = fs.readFileSync(fileName).toString();
                                 addQuery(queries, {
                                     fileName: fileName,
-                                    objectName: objectName + 'TT',
-                                    objectId: objectId + 'tt',
-                                    fileContent: tt,
-                                    createStatement: tt
+                                    objectName: objectName,
+                                    objectId: objectId,
+                                    fileContent: fileContent,
+                                    createStatement: getCreateStatement(fileContent, fileName, objectName)
                                 });
-                            }
-                            var ttu = tableToTTU(fileContent.trim().replace(/^ALTER /i, 'CREATE '));
-                            if (ttu) {
-                                addQuery(queries, {
-                                    fileName: fileName,
-                                    objectName: objectName + 'TTU',
-                                    objectId: objectId + 'ttu',
-                                    fileContent: ttu,
-                                    createStatement: ttu
-                                });
-                            }
-                        }
-                    });
-
-                    var currentFileName = '';
-                    var updated = [];
-                    when.reduce(queries, function(result, query) {
-                        updated.push(query.objectName);
-                        currentFileName = query.fileName;
-                        return self.getRequest().then(
-                            (request) => request.query(query.content).then((res) => {
-                                request.done(); return res;
-                            })
-                        );
-                    }, [])
-                        .then(function() {
-                            updated.length && self.log.info && self.log.info({
-                                message: updated,
-                                $meta: {
-                                    opcode: 'updateSchema'
+                                if (shouldCreateTT(objectId) && !objectIds[objectId + 'tt']) {
+                                    var tt = tableToType(fileContent.trim().replace(/^ALTER /i, 'CREATE '));
+                                    if (tt) {
+                                        addQuery(queries, {
+                                            fileName: fileName,
+                                            objectName: objectName + 'TT',
+                                            objectId: objectId + 'tt',
+                                            fileContent: tt,
+                                            createStatement: tt
+                                        });
+                                    }
+                                    var ttu = tableToTTU(fileContent.trim().replace(/^ALTER /i, 'CREATE '));
+                                    if (ttu) {
+                                        addQuery(queries, {
+                                            fileName: fileName,
+                                            objectName: objectName + 'TTU',
+                                            objectId: objectId + 'ttu',
+                                            fileContent: ttu,
+                                            createStatement: ttu
+                                        });
+                                    }
                                 }
                             });
-                            return resolve(prev);
-                        })
-                        .catch(function(error) {
-                            error.fileName = currentFileName;
-                            error.message = error.message + ' (' + currentFileName + ':' + (error.lineNumber || 1) + ':1)';
-                            reject(error);
-                        });
-                }
+
+                            var currentFileName = '';
+                            var updated = [];
+                            queries.reduce((promise, query) => {
+                                return promise
+                                    .then(() => {
+                                        updated.push(query.objectName);
+                                        currentFileName = query.fileName;
+                                        return self.getRequest()
+                                            .then(request => {
+                                                return request.query(query.content)
+                                                    .then(res => {
+                                                        request.done();
+                                                        return res;
+                                                    });
+                                            });
+                                    });
+                            }, Promise.resolve())
+                                .then(function() {
+                                    updated.length && self.log.info && self.log.info({
+                                        message: updated,
+                                        $meta: {
+                                            opcode: 'updateSchema'
+                                        }
+                                    });
+                                    return resolve(prev);
+                                })
+                                .catch(function(error) {
+                                    error.fileName = currentFileName;
+                                    error.message = error.message + ' (' + currentFileName + ':' + (error.lineNumber || 1) + ':1)';
+                                    reject(error);
+                                });
+                        }
+                    });
+                }, []);
             });
-        }, []);
-    }, [])
-        .then(function(objectList) {
-            return self.loadSchema(objectList);
-        });
+    }, Promise.resolve({}))
+    .then(function(objectMap) {
+        return self.loadSchema(objectMap);
+    });
 };
 
 PostgreSqlPort.prototype.getRequest = function() {
@@ -804,7 +811,8 @@ PostgreSqlPort.prototype.exec = function(message) {
     if (methodName) {
         var method = this.findHandler(methodName);
         if (method instanceof Function) {
-            return when.lift(method).apply(this, Array.prototype.slice.call(arguments));
+            return Promise.resolve()
+                .then(() => method.apply(this, Array.prototype.slice.call(arguments)));
         }
     }
 

@@ -805,14 +805,15 @@ PostgreSqlPort.prototype.linkSP = function(schema) {
     return schema;
 };
 
-PostgreSqlPort.prototype.exec = function(message) {
-    var $meta = (arguments.length && arguments[arguments.length - 1]);
-    var methodName = ($meta && $meta.method);
+PostgreSqlPort.prototype.exec = function(...params) {
+    const message = params[0];
+    const $meta = (params.length && params[params.length - 1]);
+    const methodName = ($meta && $meta.method);
     if (methodName) {
         var method = this.findHandler(methodName);
         if (method instanceof Function) {
             return Promise.resolve()
-                .then(() => method.apply(this, Array.prototype.slice.call(arguments)));
+                .then(() => method.apply(this, params));
         }
     }
 

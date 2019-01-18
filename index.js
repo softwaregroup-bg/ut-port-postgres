@@ -15,7 +15,6 @@ function PostgreSqlPort() {
     Port.call(this);
     this.config = {
         id: null,
-        logLevel: '',
         type: 'postgres',
         createTT: false,
         retry: 10000,

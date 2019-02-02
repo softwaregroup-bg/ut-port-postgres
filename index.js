@@ -11,6 +11,7 @@ const AUDIT_LOG = /^[\s+]{0,}--ut-audit-params$/m;
 const CORE_ERROR = /^[\s+]{0,}EXEC \[?core]?\.\[?error]?$/m;
 const CALL_PARAMS = /^[\s+]{0,}DECLARE @callParams XML$/m;
 
+// todo refactor
 function PostgreSqlPort() {
     Port.call(this);
     this.config = {

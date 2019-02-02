@@ -1,6 +1,6 @@
 {
   "name": "ut-port-postgres",
-  "version": "5.8.0-rc-godfather.5",
+  "version": "5.8.0",
   "main": "./index.js",
   "dependencies": {
     "pg-promise": "5.3.1",

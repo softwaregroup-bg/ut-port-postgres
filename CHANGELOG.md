@@ -1,3 +1,17 @@
+<a name="5.8.0"></a>
+# [5.8.0](https://github.com/softwaregroup-bg/ut-port-postgres/compare/v5.7.11...v5.8.0) (2019-02-02)
+
+
+### Bug Fixes
+
+* ignore package-lock ([93832ce](https://github.com/softwaregroup-bg/ut-port-postgres/commit/93832ce))
+* refactor config ([905fc14](https://github.com/softwaregroup-bg/ut-port-postgres/commit/905fc14))
+* remove dependency to when.js ([76b7b38](https://github.com/softwaregroup-bg/ut-port-postgres/commit/76b7b38))
+* remove logLevel ([3413f3e](https://github.com/softwaregroup-bg/ut-port-postgres/commit/3413f3e))
+* wrong arguments ([997c316](https://github.com/softwaregroup-bg/ut-port-postgres/commit/997c316))
+
+
+
 <a name="5.7.11"></a>
 ## [5.7.11](https://github.com/softwaregroup-bg/ut-port-postgres/compare/v5.7.10...v5.7.11) (2017-05-22)
 

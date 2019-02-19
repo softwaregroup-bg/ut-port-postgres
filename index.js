@@ -230,7 +230,7 @@ PostgreSqlPort.prototype.getSchema = function() {
             result.push({path: this.config.schema});
         }
     }
-    this.methods.imported && Object.entries(this.methods.imported).forEach(function([name, value]) {
+    this.methods.importedMap && Array.from(this.methods.importedMap.entries()).forEach(function([name, value]) {
         if (this.includesConfig('updates', name, true)) {
             value.schema && Array.prototype.push.apply(result, value.schema);
         }

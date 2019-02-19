@@ -10,7 +10,7 @@
     "ut-tools": "^5.32.10"
   },
   "peerDependencies": {
-    "ut-bus": "^6.7.0"
+    "ut-bus": "^7.1.1"
   },
   "scripts": {
     "lint": "ut-lint .",

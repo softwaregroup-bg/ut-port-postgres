@@ -1,3 +1,13 @@
+<a name="5.8.1"></a>
+## [5.8.1](https://github.com/softwaregroup-bg/ut-port-postgres/compare/v5.8.0...v5.8.1) (2019-02-19)
+
+
+### Bug Fixes
+
+* handle schemas in import order ([781d993](https://github.com/softwaregroup-bg/ut-port-postgres/commit/781d993))
+
+
+
 <a name="5.8.0"></a>
 # [5.8.0](https://github.com/softwaregroup-bg/ut-port-postgres/compare/v5.7.11...v5.8.0) (2019-02-02)
 

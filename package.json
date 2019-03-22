@@ -7,7 +7,8 @@
     "ut-error": "^5.4.9"
   },
   "devDependencies": {
-    "ut-tools": "^5.32.10"
+    "tap": "^12.6.0",
+    "ut-tools": "^6.8.10"
   },
   "peerDependencies": {
     "ut-bus": "^7.1.1"

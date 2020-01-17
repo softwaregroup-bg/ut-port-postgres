@@ -477,9 +477,9 @@ PostgreSqlPort.prototype.updateSchema = function(schema) {
                 }, []);
             });
     }, Promise.resolve({}))
-    .then(function(objectMap) {
-        return self.loadSchema(objectMap);
-    });
+        .then(function(objectMap) {
+            return self.loadSchema(objectMap);
+        });
 };
 
 PostgreSqlPort.prototype.getRequest = function() {

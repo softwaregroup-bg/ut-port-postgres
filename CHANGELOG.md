@@ -1,3 +1,7 @@
+## [5.8.3](https://github.com/softwaregroup-bg/ut-port-postgres/compare/v5.8.2...v5.8.3) (2020-01-17)
+
+
+
 <a name="5.8.2"></a>
 ## [5.8.2](https://github.com/softwaregroup-bg/ut-port-postgres/compare/v5.8.1...v5.8.2) (2019-03-22)
 
